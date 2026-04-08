@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Analyzer – Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">🚦</span>
+      <span class="brand-name">Traffic Analyzer</span>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/dashboard" class="nav-link active">Dashboard</a>
+      <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer" aria-label="API Docs (opens in new tab)">API Docs</a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot" id="apiStatus"></span>
+      <span id="apiStatusText">Connecting…</span>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero" style="padding:2rem 1rem 1.5rem">
+    <h1 style="font-size:1.75rem">📊 Live Dashboard</h1>
+    <p>Real-time traffic metrics and insights.</p>
+  </header>
+
+  <main class="container" style="grid-template-columns:1fr">
+    <!-- Stats grid -->
+    <section class="card">
+      <h2 class="card-title">Summary Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalAnalyses">—</div>
+          <div class="stat-label">Analyses Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="avgDelay">—</div>
+          <div class="stat-label">Avg Delay (min)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="activeAlerts">—</div>
+          <div class="stat-label">Active Alerts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="apiHealth" style="font-size:1.25rem">…</div>
+          <div class="stat-label">API Status</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chart placeholder -->
+    <section class="card">
+      <h2 class="card-title">Congestion Trend (last 24 h)</h2>
+      <div class="chart-placeholder">
+        <div class="chart-icon">📈</div>
+        <p>Live chart requires a persistent database and analytics backend.</p>
+        <p class="muted">Configure <code>DATABASE_URL</code> in your <code>.env</code> to enable historical tracking.</p>
+      </div>
+    </section>
+
+    <!-- Recent Analyses -->
+    <section class="card">
+      <div class="results-header">
+        <h2 class="card-title">Recent Analyses</h2>
+        <button class="btn btn-outline" onclick="loadHistory()">Refresh</button>
+      </div>
+      <div id="historyList"><p class="muted">Loading history…</p></div>
+    </section>
+
+    <!-- Active Alerts -->
+    <section class="card">
+      <div class="results-header">
+        <h2 class="card-title">⚠ Active Alerts</h2>
+        <button class="btn btn-outline" onclick="loadAlerts()">Refresh</button>
+      </div>
+      <div id="alertsList"><p class="muted">Loading alerts…</p></div>
+    </section>
+
+    <!-- Quick Analyze from Dashboard -->
+    <section class="card">
+      <h2 class="card-title">🔍 Quick Analysis</h2>
+      <div class="inline-form">
+        <input type="text" id="quickLocation" placeholder="Enter location to analyze…" class="flex-input" />
+        <button class="btn btn-primary" onclick="quickAnalyze()">Go</button>
+      </div>
+      <div id="quickResult" class="result-inline hidden"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Traffic Analyzer &copy; 2024 &mdash; Powered by Groq LLM + LangChain</p>
+  </footer>
+
+  <script src="/static/script.js"></script>
+  <script>
+  'use strict';
+
+  function escHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function loadHistory() {
+    const el = document.getElementById('historyList');
+    if (!el) return;
+    try {
+      const data = await apiFetch('/history?limit=10');
+      const items = data.history || [];
+      if (!items.length) {
+        el.innerHTML = '<p class="muted">No history yet. Run some analyses first.</p>';
+        return;
+      }
+      el.innerHTML = items.map(h => `
+        <div class="alert-item">
+          <span class="alert-severity severity-medium">${h.congestion_level ?? '?'}</span>
+          <div>
+            <strong>${h.location}</strong>
+            <span class="muted" style="margin-left:.5rem;font-size:.8rem">${h.timestamp ?? ''}</span><br/>
+            <span class="muted">${(h.analysis ?? '').slice(0, 120)}…</span>
+          </div>
+        </div>`).join('');
+    } catch {
+      el.innerHTML = '<p class="muted">Could not load history. Is the server running?</p>';
+    }
+  }
+
+  async function quickAnalyze() {
+    const loc = document.getElementById('quickLocation')?.value.trim();
+    if (!loc) return;
+    const btn = event.target;
+    const resultEl = document.getElementById('quickResult');
+    btn.disabled = true;
+    btn.textContent = '…';
+    resultEl.classList.add('hidden');
+    try {
+      const data = await apiFetch('/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ location: loc }),
+      });
+      resultEl.innerHTML = `
+        <strong>${escHtml(loc)}</strong> – congestion: <em>${escHtml(data.congestion_level ?? 'N/A')}</em><br/>
+        <span style="font-size:.85rem;color:var(--muted)">${escHtml((data.analysis ?? '').slice(0, 300))}…</span>`;
+      resultEl.classList.remove('hidden');
+    } catch (err) {
+      resultEl.innerHTML = `<span style="color:var(--error)">Error: ${escHtml(err.message)}</span>`;
+      resultEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Go';
+    }
+  }
+
+  async function updateStats() {
+    try {
+      await apiFetch('/health');
+      document.getElementById('apiHealth').textContent = '✅ Online';
+      document.getElementById('apiStatus').classList.add('online');
+      document.getElementById('apiStatusText').textContent = 'API Online';
+    } catch {
+      document.getElementById('apiHealth').textContent = '❌ Offline';
+    }
+    // Placeholders until DB is wired up
+    document.getElementById('totalAnalyses').textContent = '—';
+    document.getElementById('avgDelay').textContent = '—';
+  }
+
+  async function loadAlertsDash() {
+    const el = document.getElementById('alertsList');
+    if (!el) return;
+    try {
+      const data = await apiFetch('/alerts');
+      const alerts = data.alerts || [];
+      document.getElementById('activeAlerts').textContent = alerts.length;
+      if (!alerts.length) {
+        el.innerHTML = '<p class="muted">✅ No active alerts.</p>';
+        return;
+      }
+      el.innerHTML = alerts.map(a => `
+        <div class="alert-item">
+          <span class="alert-severity severity-${a.severity ?? 'medium'}">${a.severity ?? 'medium'}</span>
+          <div><strong>${a.location}</strong><br/><span class="muted">${a.description ?? a.alert_type}</span></div>
+        </div>`).join('');
+    } catch {
+      el.innerHTML = '<p class="muted">Could not load alerts.</p>';
+      document.getElementById('activeAlerts').textContent = '?';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateStats();
+    loadHistory();
+    loadAlertsDash();
+    setInterval(updateStats, 15000);
+    setInterval(loadAlertsDash, 30000);
+  });
+
+  window.loadHistory = loadHistory;
+  window.loadAlerts = loadAlertsDash;
+  window.quickAnalyze = quickAnalyze;
+  </script>
+</body>
+</html>

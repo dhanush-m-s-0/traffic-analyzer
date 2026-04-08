@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Analyzer – Home</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">🚦</span>
+      <span class="brand-name">Traffic Analyzer</span>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="nav-link active">Home</a>
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer" aria-label="API Docs (opens in new tab)">API Docs</a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot" id="apiStatus"></span>
+      <span id="apiStatusText">Connecting…</span>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <h1>AI-Powered Traffic Intelligence</h1>
+    <p>Real-time analysis, route optimization, and congestion prediction powered by Groq LLM.</p>
+  </header>
+
+  <!-- Main grid -->
+  <main class="container">
+    <!-- Traffic Analysis -->
+    <section class="card" id="analyzeSection">
+      <h2 class="card-title">🔍 Analyze Traffic</h2>
+      <form id="analyzeForm" class="form">
+        <div class="form-group">
+          <label for="location">Location <span class="required">*</span></label>
+          <input type="text" id="location" placeholder="e.g. New York, 5th Avenue" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="timeOfDay">Time of Day</label>
+            <select id="timeOfDay">
+              <option value="">Any</option>
+              <option value="morning">Morning (6am–10am)</option>
+              <option value="afternoon">Afternoon (12pm–4pm)</option>
+              <option value="evening">Evening (4pm–8pm)</option>
+              <option value="night">Night (8pm–6am)</option>
+            </select>
+          </div>
+          <div class="form-group toggle-group">
+            <label>Weather Impact</label>
+            <label class="switch">
+              <input type="checkbox" id="includeWeather" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="aiQuery">AI Query (optional)</label>
+          <input type="text" id="aiQuery" placeholder="Ask the AI anything about this location…" />
+        </div>
+        <button type="submit" class="btn btn-primary" id="analyzeBtn">
+          <span class="btn-text">Analyze</span>
+          <span class="btn-spinner hidden">⏳</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Route Optimization -->
+    <section class="card" id="routeSection">
+      <h2 class="card-title">🗺 Route Optimization</h2>
+      <form id="routeForm" class="form">
+        <div class="form-group">
+          <label for="origin">Origin <span class="required">*</span></label>
+          <input type="text" id="origin" placeholder="Starting point" required />
+        </div>
+        <div class="form-group">
+          <label for="destination">Destination <span class="required">*</span></label>
+          <input type="text" id="destination" placeholder="End point" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group toggle-group">
+            <label>Avoid Congestion</label>
+            <label class="switch">
+              <input type="checkbox" id="avoidCongestion" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="routeTime">Departure Time</label>
+            <select id="routeTime">
+              <option value="">Now</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-secondary" id="routeBtn">
+          <span class="btn-text">Optimize Route</span>
+          <span class="btn-spinner hidden">⏳</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Results panel -->
+    <section class="card results-card hidden" id="resultsCard">
+      <div class="results-header">
+        <h2 class="card-title" id="resultsTitle">Results</h2>
+        <button class="btn-icon" onclick="closeResults()" title="Close">✕</button>
+      </div>
+
+      <!-- Congestion badge -->
+      <div class="congestion-badge hidden" id="congestionBadge">
+        <span id="congestionLabel">—</span>
+      </div>
+      <div class="delay-info hidden" id="delayInfo">
+        ⏱ Estimated delay: <strong id="delayValue">0</strong> minutes
+      </div>
+
+      <!-- AI Analysis -->
+      <div class="analysis-box" id="analysisBox"></div>
+
+      <!-- Recommendations -->
+      <div id="recommendationsBox" class="hidden">
+        <h3>💡 Recommendations</h3>
+        <ul id="recommendationsList"></ul>
+      </div>
+    </section>
+
+    <!-- Quick Congestion Checker -->
+    <section class="card" id="congestionSection">
+      <h2 class="card-title">🚗 Quick Congestion Check</h2>
+      <div class="inline-form">
+        <input type="text" id="congestionLocation" placeholder="Enter location…" class="flex-input" />
+        <button class="btn btn-accent" id="congestionBtn" onclick="checkCongestion()">Check</button>
+      </div>
+      <div id="congestionResult" class="result-inline hidden"></div>
+    </section>
+
+    <!-- Alerts -->
+    <section class="card" id="alertsSection">
+      <h2 class="card-title">⚠ Active Alerts</h2>
+      <div id="alertsList"><p class="muted">Loading alerts…</p></div>
+      <button class="btn btn-outline" onclick="loadAlerts()">Refresh</button>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Traffic Analyzer &copy; 2024 &mdash; Powered by Groq LLM + LangChain &mdash;
+      <a href="/docs" target="_blank" rel="noopener noreferrer" aria-label="API Docs (opens in new tab)">API Docs</a>
+    </p>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
