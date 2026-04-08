@@ -1,0 +1,5 @@
+groq
+langchain
+fastapi
+click
+sqlalchemy
