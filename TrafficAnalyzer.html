@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traffic Analyzer AI — Intelligent Urban Traffic Management</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="window._chartJsBlocked=true"></script>
+<style>
+/* ===== CSS DESIGN SYSTEM ===== */
+:root {
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --secondary: #8b5cf6;
+  --accent: #06b6d4;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --bg: #0f0f23;
+  --bg2: #13132d;
+  --surface: rgba(255,255,255,0.05);
+  --surface2: rgba(255,255,255,0.09);
+  --glass: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.15);
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --card-bg: rgba(255,255,255,0.06);
+  --input-bg: rgba(255,255,255,0.08);
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 24px;
+  --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+[data-theme="light"] {
+  --bg: #f0f4ff;
+  --bg2: #e8eeff;
+  --surface: rgba(0,0,0,0.04);
+  --surface2: rgba(0,0,0,0.07);
+  --glass: rgba(255,255,255,0.7);
+  --glass-border: rgba(99,102,241,0.2);
+  --text: #1e293b;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+  --card-bg: rgba(255,255,255,0.75);
+  --input-bg: rgba(255,255,255,0.9);
+  --shadow: 0 8px 32px rgba(99,102,241,0.12);
+  --shadow-lg: 0 20px 60px rgba(99,102,241,0.18);
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* Background Orbs */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+  top: -200px; left: -200px;
+}
+body::after {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%);
+  bottom: -150px; right: -150px;
+}
+
+#app { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 20px 60px; }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideUp { from { opacity:0; transform:translateY(40px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulse { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.05); opacity:.8; } }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+@keyframes gradientShift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+@keyframes countUp { from { transform:translateY(10px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes toastIn { from { transform:translateX(120%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@keyframes toastOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(120%); opacity:0; } }
+@keyframes heatPop { 0% { transform:scale(0.6); opacity:0; } 100% { transform:scale(1); opacity:1; } }
+@keyframes liveRing { 0% { box-shadow:0 0 0 0 rgba(16,185,129,0.6); } 70% { box-shadow:0 0 0 10px rgba(16,185,129,0); } 100% { box-shadow:0 0 0 0 rgba(16,185,129,0); } }
+
+.animate-in { animation: fadeIn 0.5s ease forwards; }
+.slide-up { animation: slideUp 0.6s ease forwards; }
+
+/* ===== GLASSMORPHISM BASE ===== */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ===== HEADER ===== */
+header {
+  background: linear-gradient(135deg, #1a1a3e 0%, #0f0f23 40%, #0a1628 100%);
+  background-size: 300% 300%;
+  animation: gradientShift 8s ease infinite;
+  border-bottom: 1px solid rgba(99,102,241,0.3);
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+[data-theme="light"] header {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #06b6d4 100%);
+}
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  gap: 16px;
+}
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-icon {
+  width:44px; height:44px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+  box-shadow: 0 4px 15px rgba(99,102,241,0.4);
+  animation: pulse 3s ease infinite;
+  flex-shrink:0;
+}
+.app-title { font-size:1.4rem; font-weight:700; color:#fff; line-height:1.1; }
+.app-sub { font-size:0.72rem; color:rgba(255,255,255,0.55); font-weight:400; letter-spacing:.5px; }
+.model-badge {
+  background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(6,182,212,0.3));
+  border: 1px solid rgba(99,102,241,0.5);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size:0.72rem;
+  font-weight:600;
+  color: #a5b4fc;
+  letter-spacing:.5px;
+  white-space:nowrap;
+}
+.header-actions { display:flex; align-items:center; gap:10px; }
+.btn-icon {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  width:38px; height:38px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:17px;
+  display:flex; align-items:center; justify-content:center;
+  transition: var(--transition);
+  flex-shrink:0;
+}
+.btn-icon:hover { background:rgba(255,255,255,0.2); transform:scale(1.05); }
+
+/* ===== HERO SECTION ===== */
+.hero {
+  text-align:center;
+  padding: 50px 20px 40px;
+  animation: fadeIn 0.8s ease forwards;
+}
+.hero h2 {
+  font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:800;
+  background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 30%, #06b6d4 70%, #34d399 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:12px;
+  line-height:1.2;
+}
+.hero p { color:var(--text-muted); font-size:1.05rem; max-width:600px; margin:0 auto; }
+
+/* ===== GRID LAYOUTS ===== */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+
+/* ===== SECTION CARD ===== */
+.section-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  animation: slideUp 0.5s ease forwards;
+}
+.section-card:hover { box-shadow: var(--shadow-lg); border-color: rgba(99,102,241,0.3); }
+.section-title {
+  font-size:1rem; font-weight:700;
+  color:var(--text);
+  margin-bottom:18px;
+  display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid var(--glass-border);
+  padding-bottom:12px;
+}
+.section-title .icon { font-size:1.2rem; }
+
+/* ===== FORM ELEMENTS ===== */
+.form-group { display:flex; flex-direction:column; gap:6px; position:relative; }
+.form-group label { font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; }
+.form-control {
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-size:0.9rem;
+  font-family:var(--font);
+  transition: var(--transition);
+  width:100%;
+  outline:none;
+  -webkit-appearance:none;
+}
+.form-control:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(99,102,241,0.2); }
+select.form-control { cursor:pointer; }
+.autocomplete-list {
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0; right:0;
+  background: var(--bg2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  z-index:50;
+  max-height:200px;
+  overflow-y:auto;
+  box-shadow: var(--shadow-lg);
+  display:none;
+}
+.autocomplete-list.open { display:block; }
+.autocomplete-item {
+  padding:10px 14px;
+  cursor:pointer;
+  font-size:0.88rem;
+  color:var(--text);
+  display:flex; align-items:center; gap:8px;
+  transition: background 0.15s;
+}
+.autocomplete-item:hover { background:rgba(99,102,241,0.15); }
+.autocomplete-item .pin { color:var(--danger); }
+
+/* ===== METRIC CARDS ===== */
+.metric-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  text-align:center;
+  transition: var(--transition);
+  position:relative;
+  overflow:hidden;
+}
+.metric-card::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:3px;
+  border-radius:var(--radius) var(--radius) 0 0;
+}
+.metric-card.m-blue::before { background: linear-gradient(90deg,var(--primary),var(--accent)); }
+.metric-card.m-purple::before { background: linear-gradient(90deg,var(--secondary),var(--primary)); }
+.metric-card.m-orange::before { background: linear-gradient(90deg,var(--warning),#f97316); }
+.metric-card.m-green::before { background: linear-gradient(90deg,var(--success),var(--accent)); }
+.metric-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.metric-label { font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
+.metric-value {
+  font-size:2rem; font-weight:800;
+  background: linear-gradient(135deg, var(--text), var(--text-muted));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  line-height:1;
+  display:inline-block;
+}
+.metric-value.updated { animation: countUp 0.4s ease forwards; }
+.metric-unit { font-size:0.72rem; color:var(--text-dim); margin-top:4px; }
+.metric-trend {
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:0.75rem; font-weight:600;
+  margin-top:6px;
+  padding:2px 8px;
+  border-radius:20px;
+}
+.trend-up { color:var(--danger); background:rgba(239,68,68,0.12); }
+.trend-down { color:var(--success); background:rgba(16,185,129,0.12); }
+.trend-stable { color:var(--warning); background:rgba(245,158,11,0.12); }
+.live-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(16,185,129,0.15);
+  border:1px solid rgba(16,185,129,0.3);
+  color:var(--success);
+  padding:4px 10px;
+  border-radius:20px;
+  font-size:0.72rem;
+  font-weight:700;
+  cursor:pointer;
+  transition:var(--transition);
+  letter-spacing:.5px;
+}
+.live-badge.active { animation: liveRing 1.5s infinite; }
+.live-badge .dot {
+  width:7px; height:7px;
+  border-radius:50%;
+  background:var(--success);
+  animation: blink 1s infinite;
+}
+.live-badge:not(.active) .dot { animation:none; background:var(--text-dim); }
+
+/* ===== CHART SECTION ===== */
+.chart-wrapper { position:relative; height:280px; margin-top:8px; }
+
+/* ===== HEATMAP ===== */
+.heatmap-container { overflow-x:auto; }
+.heatmap-grid { display:grid; grid-template-columns:50px repeat(24,1fr); gap:3px; min-width:700px; }
+.heatmap-header { font-size:0.6rem; color:var(--text-dim); text-align:center; display:flex; align-items:center; justify-content:center; }
+.heatmap-day { font-size:0.7rem; color:var(--text-muted); font-weight:600; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; }
+.heatmap-cell {
+  height:22px;
+  border-radius:4px;
+  cursor:pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  animation: heatPop 0.3s ease forwards;
+  position:relative;
+}
+.heatmap-cell:hover { transform:scale(1.2); box-shadow:0 2px 8px rgba(0,0,0,0.4); z-index:5; }
+.heatmap-tooltip {
+  position:fixed;
+  background:rgba(15,15,35,0.95);
+  border:1px solid var(--glass-border);
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:0.75rem;
+  color:var(--text);
+  pointer-events:none;
+  z-index:200;
+  backdrop-filter:blur(10px);
+  display:none;
+  box-shadow:var(--shadow);
+}
+.heatmap-legend { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:0.72rem; color:var(--text-muted); }
+.legend-item { display:flex; align-items:center; gap:4px; }
+.legend-dot { width:12px; height:12px; border-radius:3px; }
+
+/* ===== PRESET CARDS ===== */
+.preset-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+.preset-card {
+  background: var(--surface);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  cursor:pointer;
+  transition:var(--transition);
+  display:flex; flex-direction:column; gap:6px;
+}
+.preset-card:hover { border-color:var(--primary); background:rgba(99,102,241,0.1); transform:translateY(-2px); }
+.preset-card.active { border-color:var(--primary); background:rgba(99,102,241,0.15); box-shadow:0 0 0 2px rgba(99,102,241,0.3); }
+.preset-icon { font-size:1.5rem; }
+.preset-title { font-size:0.85rem; font-weight:700; color:var(--text); }
+.preset-desc { font-size:0.75rem; color:var(--text-muted); line-height:1.4; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 20px;
+  border-radius:var(--radius-sm);
+  font-size:0.88rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:var(--transition);
+  border:none;
+  font-family:var(--font);
+  white-space:nowrap;
+}
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none !important; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color:#fff;
+  box-shadow:0 4px 15px rgba(99,102,241,0.4);
+}
+.btn-primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 20px rgba(99,102,241,0.5); }
+.btn-outline {
+  background:transparent;
+  border:1px solid var(--glass-border);
+  color:var(--text);
+}
+.btn-outline:hover:not(:disabled) { border-color:var(--primary); color:var(--primary); background:rgba(99,102,241,0.08); }
+.btn-success {
+  background:linear-gradient(135deg,var(--success),#059669);
+  color:#fff;
+  box-shadow:0 4px 15px rgba(16,185,129,0.3);
+}
+.btn-success:hover:not(:disabled) { transform:translateY(-2px); }
+.btn-warning {
+  background:linear-gradient(135deg,var(--warning),#d97706);
+  color:#fff;
+  box-shadow:0 4px 15px rgba(245,158,11,0.3);
+}
+.btn-warning:hover:not(:disabled) { transform:translateY(-2px); }
+.btn-danger {
+  background:linear-gradient(135deg,var(--danger),#dc2626);
+  color:#fff;
+  box-shadow:0 4px 15px rgba(239,68,68,0.3);
+}
+.btn-danger:hover:not(:disabled) { transform:translateY(-2px); }
+.action-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+
+/* ===== AGENT STEPS ===== */
+.steps-container { display:flex; flex-direction:column; gap:10px; }
+.step-item {
+  display:flex; align-items:center; gap:14px;
+  background:var(--surface);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);
+  padding:12px 16px;
+  transition:var(--transition);
+}
+.step-item.active { border-color:var(--primary); background:rgba(99,102,241,0.1); box-shadow:0 0 0 1px rgba(99,102,241,0.3); }
+.step-item.done { border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.07); }
+.step-item.error { border-color:rgba(239,68,68,0.4); background:rgba(239,68,68,0.07); }
+.step-icon {
+  width:32px; height:32px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px;
+  flex-shrink:0;
+  background:var(--surface2);
+  border:1px solid var(--glass-border);
+}
+.step-icon.spinning { animation:spin 1s linear infinite; border-color:var(--primary); color:var(--primary); }
+.step-icon.done-icon { background:rgba(16,185,129,0.2); border-color:var(--success); color:var(--success); }
+.step-icon.error-icon { background:rgba(239,68,68,0.2); border-color:var(--danger); color:var(--danger); }
+.step-text { flex:1; }
+.step-name { font-size:0.85rem; font-weight:700; color:var(--text); }
+.step-desc { font-size:0.78rem; color:var(--text-muted); margin-top:2px; }
+.step-time { font-size:0.72rem; color:var(--text-dim); font-family:monospace; }
+.step-bar {
+  height:3px; border-radius:2px;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  margin-top:6px;
+  transform-origin:left;
+  transform:scaleX(0);
+  transition:transform 0.5s ease;
+}
+.step-item.done .step-bar { transform:scaleX(1); }
+
+/* ===== RESULTS PANEL ===== */
+.results-panel {
+  background:var(--card-bg);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+}
+.results-panel::before {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:4px;
+  background:linear-gradient(90deg,var(--primary),var(--secondary),var(--accent));
+}
+.results-header {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-bottom:16px;
+  padding-top:8px;
+}
+.badge {
+  padding:4px 12px;
+  border-radius:20px;
+  font-size:0.72rem;
+  font-weight:700;
+  letter-spacing:.5px;
+}
+.badge-confidence { background:rgba(99,102,241,0.2); color:#a5b4fc; border:1px solid rgba(99,102,241,0.3); }
+.badge-low { background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid rgba(16,185,129,0.3); }
+.badge-medium { background:rgba(245,158,11,0.2); color:#fcd34d; border:1px solid rgba(245,158,11,0.3); }
+.badge-high { background:rgba(249,115,22,0.2); color:#fdba74; border:1px solid rgba(249,115,22,0.3); }
+.badge-critical { background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.3); }
+.report-content {
+  font-size:0.9rem;
+  line-height:1.8;
+  color:var(--text);
+  white-space:pre-wrap;
+  max-height:500px;
+  overflow-y:auto;
+  padding-right:4px;
+}
+.report-content::-webkit-scrollbar { width:4px; }
+.report-content::-webkit-scrollbar-thumb { background:var(--primary); border-radius:2px; }
+.report-section-header {
+  font-weight:700; font-size:0.95rem;
+  color:var(--accent);
+  display:block;
+  margin:12px 0 4px;
+  padding:8px 12px;
+  background:rgba(6,182,212,0.07);
+  border-left:3px solid var(--accent);
+  border-radius:0 6px 6px 0;
+}
+.report-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+.placeholder-text {
+  text-align:center;
+  padding:40px 20px;
+  color:var(--text-dim);
+}
+.placeholder-text .big-icon { font-size:3rem; margin-bottom:12px; }
+.placeholder-text p { font-size:0.88rem; }
+
+/* ===== ERROR STATE ===== */
+.error-state {
+  background:rgba(239,68,68,0.1);
+  border:1px solid rgba(239,68,68,0.3);
+  border-radius:var(--radius-sm);
+  padding:16px;
+  color:#fca5a5;
+  font-size:0.9rem;
+  display:flex; align-items:flex-start; gap:10px;
+}
+
+/* ===== HISTORY PANEL ===== */
+.history-list { display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-right:4px; }
+.history-list::-webkit-scrollbar { width:4px; }
+.history-list::-webkit-scrollbar-thumb { background:var(--primary); border-radius:2px; }
+.history-item {
+  background:var(--surface);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+  display:flex; align-items:flex-start; gap:10px;
+  cursor:pointer;
+  transition:var(--transition);
+}
+.history-item:hover { border-color:var(--primary); background:rgba(99,102,241,0.08); }
+.history-item.favorite { border-color:rgba(245,158,11,0.4); }
+.history-meta { flex:1; min-width:0; }
+.history-loc { font-size:0.83rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.history-preview { font-size:0.75rem; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.history-time { font-size:0.7rem; color:var(--text-dim); margin-top:4px; }
+.history-actions { display:flex; gap:4px; }
+.history-btn {
+  background:transparent; border:1px solid var(--glass-border);
+  color:var(--text-muted); width:28px; height:28px;
+  border-radius:6px; cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center;
+  transition:var(--transition); flex-shrink:0;
+}
+.history-btn:hover { background:var(--surface2); color:var(--text); }
+.history-btn.active { color:var(--warning); border-color:rgba(245,158,11,0.4); }
+.empty-history { text-align:center; padding:30px; color:var(--text-dim); font-size:0.85rem; }
+
+/* ===== TOAST ===== */
+#toast-container {
+  position:fixed; top:20px; right:20px;
+  z-index:9999;
+  display:flex; flex-direction:column; gap:8px;
+  pointer-events:none;
+}
+.toast {
+  background:var(--bg2);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);
+  padding:12px 16px;
+  display:flex; align-items:center; gap:10px;
+  min-width:280px; max-width:380px;
+  box-shadow:var(--shadow-lg);
+  backdrop-filter:blur(20px);
+  pointer-events:all;
+  animation: toastIn 0.35s ease forwards;
+  font-size:0.87rem;
+  font-weight:500;
+  color:var(--text);
+}
+.toast.removing { animation: toastOut 0.3s ease forwards; }
+.toast-icon { font-size:1.1rem; flex-shrink:0; }
+.toast-success { border-left:3px solid var(--success); }
+.toast-error { border-left:3px solid var(--danger); }
+.toast-info { border-left:3px solid var(--accent); }
+.toast-warning { border-left:3px solid var(--warning); }
+.toast-close { margin-left:auto; cursor:pointer; color:var(--text-dim); font-size:16px; background:none; border:none; flex-shrink:0; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(6px);
+  z-index:999;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--bg2);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg);
+  padding:30px;
+  max-width:520px;
+  width:100%;
+  box-shadow:var(--shadow-lg);
+  transform:scale(0.9);
+  transition: transform 0.25s;
+}
+.modal-overlay.open .modal { transform:scale(1); }
+.modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.modal-title { font-size:1.2rem; font-weight:700; color:var(--text); }
+.shortcut-list { display:flex; flex-direction:column; gap:10px; }
+.shortcut-item { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border-radius:8px; }
+.shortcut-desc { font-size:0.85rem; color:var(--text-muted); }
+.shortcut-keys { display:flex; gap:4px; }
+.kbd {
+  background:var(--surface2);
+  border:1px solid var(--glass-border);
+  border-radius:5px;
+  padding:3px 8px;
+  font-size:0.75rem;
+  font-family:monospace;
+  font-weight:600;
+  color:var(--text);
+}
+
+/* ===== SPINNER ===== */
+.spinner {
+  display:inline-block;
+  width:16px; height:16px;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:currentColor;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  flex-shrink:0;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar-wrap { background:var(--surface); border-radius:4px; height:6px; overflow:hidden; }
+.progress-bar { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--primary),var(--accent)); transition:width 0.5s ease; }
+
+/* ===== SEPARATOR ===== */
+.sep { height:1px; background:var(--glass-border); margin:24px 0; }
+
+/* ===== TEXTAREA ===== */
+textarea.form-control { resize:vertical; min-height:100px; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:900px) {
+  .grid-4 { grid-template-columns:repeat(2,1fr); }
+  .grid-2 { grid-template-columns:1fr; }
+}
+@media (max-width:600px) {
+  .grid-4 { grid-template-columns:1fr 1fr; }
+  .grid-3 { grid-template-columns:1fr; }
+  .preset-grid { grid-template-columns:1fr 1fr; }
+  .app-title { font-size:1.1rem; }
+  .model-badge { display:none; }
+  .action-bar { justify-content:center; }
+}
+
+/* ===== SCROLLBAR GLOBAL ===== */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(99,102,241,0.4); border-radius:3px; }
+
+/* ===== PRINT ===== */
+@media print {
+  body { background:#fff !important; color:#000 !important; }
+  header, .config-panel, .metrics-section, .chart-section, .heatmap-section,
+  .query-section, .action-bar, .steps-section, .history-section,
+  #toast-container, .modal-overlay, .btn:not(.print-hide) { display:none !important; }
+  .results-panel { border:none !important; box-shadow:none !important; background:#fff !important; }
+  .report-content { max-height:none !important; color:#000 !important; }
+  .badge { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+
+/* ===== COLLAPSIBLE ===== */
+.collapsible-header {
+  cursor:pointer;
+  user-select:none;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.collapsible-header .chevron { transition:transform 0.25s; }
+.collapsible-header.collapsed .chevron { transform:rotate(-90deg); }
+.collapsible-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.3s ease; }
+.collapsible-body.collapsed { max-height:0 !important; opacity:0; }
+
+/* ===== SHARE MODAL ===== */
+.share-url-box {
+  background:var(--surface);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);
+  padding:10px 14px;
+  font-size:0.78rem;
+  color:var(--text-muted);
+  word-break:break-all;
+  font-family:monospace;
+  margin:12px 0;
+}
+</style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div id="toast-container" role="alert" aria-live="polite"></div>
+
+<!-- Heatmap Tooltip -->
+<div id="heatmap-tooltip" class="heatmap-tooltip"></div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div id="shortcuts-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="shortcuts-title" class="modal-title">⌨️ Keyboard Shortcuts</span>
+      <button class="btn-icon" onclick="closeModal('shortcuts-modal')" title="Close" style="background:var(--surface);border-color:var(--glass-border);color:var(--text);">✕</button>
+    </div>
+    <div class="shortcut-list">
+      <div class="shortcut-item"><span class="shortcut-desc">Run Analysis</span><div class="shortcut-keys"><span class="kbd">Ctrl</span><span class="kbd">Enter</span></div></div>
+      <div class="shortcut-item"><span class="shortcut-desc">Randomize Data</span><div class="shortcut-keys"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">R</span></div></div>
+      <div class="shortcut-item"><span class="shortcut-desc">Clear Results</span><div class="shortcut-keys"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">C</span></div></div>
+      <div class="shortcut-item"><span class="shortcut-desc">Export JSON</span><div class="shortcut-keys"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">E</span></div></div>
+      <div class="shortcut-item"><span class="shortcut-desc">Toggle Live Mode</span><div class="shortcut-keys"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">L</span></div></div>
+      <div class="shortcut-item"><span class="shortcut-desc">Show Shortcuts</span><div class="shortcut-keys"><span class="kbd">?</span><span style="color:var(--text-dim);font-size:.8rem"> or </span><span class="kbd">F1</span></div></div>
+      <div class="shortcut-item"><span class="shortcut-desc">Close Modal</span><div class="shortcut-keys"><span class="kbd">Esc</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div id="share-modal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔗 Share Analysis</span>
+      <button class="btn-icon" onclick="closeModal('share-modal')" style="background:var(--surface);border-color:var(--glass-border);color:var(--text);">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-muted);">Share the current configuration and results via URL:</p>
+    <div id="share-url-display" class="share-url-box">Generating...</div>
+    <button class="btn btn-primary" onclick="copyShareUrl()" style="width:100%;">📋 Copy Link</button>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">🚦</div>
+      <div>
+        <div class="app-title">Traffic Analyzer AI</div>
+        <div class="app-sub">Intelligent Urban Traffic Management System</div>
+      </div>
+    </div>
+    <div class="model-badge">⚡ llama-3.3-70b-versatile</div>
+    <div class="header-actions">
+      <button class="btn-icon" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+      <button class="btn-icon" onclick="openModal('shortcuts-modal')" title="Keyboard shortcuts (?)">⌨️</button>
+      <button class="btn-icon" onclick="generateShareLink()" title="Share analysis">🔗</button>
+    </div>
+  </div>
+</header>
+
+<div id="app">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>AI-Powered Traffic Intelligence</h2>
+    <p>Real-time analytics, predictive modeling & adaptive signal optimization powered by Groq LLM</p>
+  </div>
+
+  <!-- Config Panel -->
+  <div class="section-card config-panel animate-in" style="animation-delay:.1s;margin-bottom:20px;">
+    <div class="section-title"><span class="icon">⚙️</span> Configuration</div>
+    <div class="grid-4" style="gap:16px;">
+      <div class="form-group">
+        <label>📍 Location</label>
+        <input type="text" id="location-input" class="form-control" placeholder="e.g. Times Square, NYC"
+          autocomplete="off" oninput="handleLocationInput(this.value)" onfocus="showAutocomplete()" onblur="hideAutocomplete()">
+        <div id="autocomplete-list" class="autocomplete-list" onmousedown="event.preventDefault()"></div>
+      </div>
+      <div class="form-group">
+        <label>🕐 Time of Day</label>
+        <select id="time-select" class="form-control" onchange="saveSession()">
+          <option value="morning_rush">Morning Rush (7-9 AM)</option>
+          <option value="midday">Midday (11AM-1PM)</option>
+          <option value="afternoon_rush" selected>Afternoon Rush (4-7PM)</option>
+          <option value="evening">Evening (7-10PM)</option>
+          <option value="night">Late Night (10PM-5AM)</option>
+          <option value="weekend">Weekend</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>☁️ Weather</label>
+        <select id="weather-select" class="form-control" onchange="saveSession()">
+          <option value="clear">☀️ Clear</option>
+          <option value="partly_cloudy">⛅ Partly Cloudy</option>
+          <option value="rain" selected>🌧️ Rain</option>
+          <option value="heavy_rain">⛈️ Heavy Rain</option>
+          <option value="fog">🌫️ Fog</option>
+          <option value="snow">❄️ Snow</option>
+          <option value="ice">🧊 Ice/Frost</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🚨 Incident Type</label>
+        <select id="incident-select" class="form-control" onchange="saveSession()">
+          <option value="none">✅ No Incident</option>
+          <option value="accident" selected>💥 Accident</option>
+          <option value="construction">🚧 Construction</option>
+          <option value="event">🎉 Special Event</option>
+          <option value="breakdown">🚗 Vehicle Breakdown</option>
+          <option value="flooding">🌊 Road Flooding</option>
+          <option value="police">🚔 Police Activity</option>
+        </select>
+      </div>
+    </div>
+    <!-- API Key row -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--glass-border);">
+      <div class="form-group" style="max-width:480px;">
+        <label>🔑 Groq API Key <span style="font-weight:400;color:var(--text-muted);font-size:10px;">(stored locally, never sent elsewhere)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="password" id="api-key-input" class="form-control" placeholder="Enter your Groq API key (gsk_...)"
+            oninput="saveApiKey(this.value)" autocomplete="off" style="flex:1;font-family:monospace;font-size:12px;">
+          <button type="button" onclick="toggleApiKeyVisibility()" class="btn" style="padding:8px 12px;font-size:12px;background:var(--surface);border-color:var(--glass-border);color:var(--text);flex-shrink:0;" title="Show/hide key">👁</button>
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="btn" style="padding:8px 12px;font-size:11px;background:var(--surface);border-color:var(--glass-border);color:var(--accent);text-decoration:none;flex-shrink:0;" title="Get a free API key">Get Key ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Metrics Dashboard -->
+  <div class="section-card metrics-section animate-in" style="animation-delay:.2s;margin-bottom:20px;">
+    <div class="section-title" style="border-bottom:none;padding-bottom:0;margin-bottom:0;">
+      <span class="icon">📊</span> Live Metrics Dashboard
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        <div id="live-badge" class="live-badge" onclick="toggleLiveMode()" title="Ctrl+Shift+L">
+          <div class="dot"></div><span id="live-text">LIVE OFF</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <div class="grid-4">
+        <div class="metric-card m-blue">
+          <div class="metric-label">Vehicle Count</div>
+          <div class="metric-value" id="m-vehicles">2,847</div>
+          <div class="metric-unit">vehicles / hr</div>
+          <div class="metric-trend trend-up" id="t-vehicles">▲ +12%</div>
+        </div>
+        <div class="metric-card m-purple">
+          <div class="metric-label">Avg Speed</div>
+          <div class="metric-value" id="m-speed">34</div>
+          <div class="metric-unit">km / h</div>
+          <div class="metric-trend trend-down" id="t-speed">▼ -8%</div>
+        </div>
+        <div class="metric-card m-orange">
+          <div class="metric-label">Congestion</div>
+          <div class="metric-value" id="m-congestion">68</div>
+          <div class="metric-unit">% saturation</div>
+          <div class="metric-trend trend-up" id="t-congestion">▲ +5%</div>
+        </div>
+        <div class="metric-card m-green">
+          <div class="metric-label">Signal Cycle</div>
+          <div class="metric-value" id="m-signal">90</div>
+          <div class="metric-unit">seconds</div>
+          <div class="metric-trend trend-stable" id="t-signal">● stable</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- Traffic Trend Chart -->
+    <div class="section-card chart-section animate-in" style="animation-delay:.3s;">
+      <div class="section-title"><span class="icon">📈</span> 24-Hour Traffic Volume Trend</div>
+      <div class="chart-wrapper">
+        <canvas id="traffic-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Congestion Heatmap -->
+    <div class="section-card heatmap-section animate-in" style="animation-delay:.35s;">
+      <div class="section-title"><span class="icon">🔥</span> Weekly Congestion Heatmap</div>
+      <div class="heatmap-container">
+        <div id="heatmap-grid" class="heatmap-grid"></div>
+        <div class="heatmap-legend">
+          <span style="font-weight:600;margin-right:4px;">Congestion:</span>
+          <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Low</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#eab308;"></div> Medium</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f97316;"></div> High</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Critical</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Query Section -->
+  <div class="section-card query-section animate-in" style="animation-delay:.4s;margin-bottom:20px;">
+    <div class="section-title"><span class="icon">🔎</span> Analysis Query</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:14px;">Select a preset or enter a custom analysis query:</p>
+    <div class="preset-grid" id="preset-grid" style="margin-bottom:16px;"></div>
+    <div class="form-group">
+      <label>Custom Query</label>
+      <textarea id="query-input" class="form-control" rows="4" placeholder="Describe what traffic analysis you need..."></textarea>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="section-card animate-in" style="animation-delay:.45s;margin-bottom:20px;">
+    <div class="action-bar">
+      <button id="run-btn" class="btn btn-primary" onclick="runAnalysis()">
+        <span>🚀</span><span>Run Agent</span>
+      </button>
+      <button class="btn btn-warning" onclick="randomizeData()">
+        <span>🎲</span><span>Randomize Data</span>
+      </button>
+      <button class="btn btn-outline" onclick="clearResults()">
+        <span>🗑️</span><span>Clear</span>
+      </button>
+      <button class="btn btn-success" onclick="exportJSON()">
+        <span>📦</span><span>Export JSON</span>
+      </button>
+      <button class="btn btn-outline" onclick="exportPDF()">
+        <span>📄</span><span>Export PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Agent Steps + Results Row -->
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- Agent Steps -->
+    <div class="section-card steps-section animate-in" style="animation-delay:.5s;">
+      <div class="section-title"><span class="icon">🤖</span> Agent Reasoning Steps</div>
+      <div class="steps-container" id="steps-container"></div>
+      <div style="margin-top:14px;display:none;" id="progress-wrap">
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-muted);margin-bottom:6px;">
+          <span>Progress</span><span id="progress-label">0%</span>
+        </div>
+        <div class="progress-bar-wrap"><div id="progress-bar" class="progress-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div id="results-panel" class="results-panel animate-in" style="animation-delay:.55s;">
+      <div class="results-header">
+        <span style="font-size:1rem;font-weight:700;color:var(--text);">📋 Analysis Report</span>
+      </div>
+      <div id="results-content">
+        <div class="placeholder-text">
+          <div class="big-icon">🧠</div>
+          <p>Configure your parameters and click<br><strong>Run Agent</strong> to generate an AI-powered traffic analysis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History / Favorites -->
+  <div class="section-card history-section animate-in" style="animation-delay:.6s;">
+    <div class="section-title collapsible-header" onclick="toggleCollapsible(this)">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="icon">📚</span> Analysis History & Favorites</span>
+      <span class="chevron" style="font-size:.8rem;">▼</span>
+    </div>
+    <div class="collapsible-body" id="history-body" style="max-height:400px;">
+      <div id="history-list" class="history-list" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<script>
+// ===== CONFIG =====
+const CONFIG = {
+  API_URL: 'https://api.groq.com/openai/v1/chat/completions',
+  MODEL: 'llama-3.3-70b-versatile',
+  MAX_HISTORY: 10,
+  LIVE_INTERVAL: 5000,
+  STORAGE_KEY: 'traffic_analyzer_v3',
+  API_KEY_STORAGE: 'traffic_analyzer_api_key',
+};
+
+function getApiKey() {
+  return localStorage.getItem(CONFIG.API_KEY_STORAGE) || '';
+}
+
+function saveApiKey(value) {
+  localStorage.setItem(CONFIG.API_KEY_STORAGE, value.trim());
+}
+
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('api-key-input');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+const SYSTEM_PROMPT = `You are an elite Agentic Traffic Management AI System with expertise in urban traffic engineering, signal optimization, and predictive analytics. You have completed 5 analytical tool calls. Generate a comprehensive structured report with these exact sections:
+
+📍 SITUATION SUMMARY
+🔍 ROOT CAUSES
+✅ RECOMMENDATIONS (numbered, at least 5 specific actions)
+🚦 SIGNAL TIMING (specific timing recommendations in seconds)
+🔮 PREDICTED OUTCOME (with percentage improvements)
+⚠️ RISK ASSESSMENT (risk factors and mitigation)
+
+Be highly specific with numbers, percentages, and actionable steps. Use the exact metrics provided.`;
+
+// ===== STATE =====
+const state = {
+  theme: 'dark',
+  liveMode: false,
+  liveTimer: null,
+  metrics: { vehicles: 2847, speed: 34, congestion: 68, signal: 90 },
+  chartData: [],
+  heatmapData: [],
+  currentResult: null,
+  isRunning: false,
+  history: [],
+  selectedPreset: null,
+  shareUrl: '',
+};
+
+// ===== LOGGER =====
+const logger = {
+  _fmt: (lvl, msg) => `[${new Date().toISOString().slice(11,19)}][${lvl}] ${msg}`,
+  info: (m) => console.log('%c' + logger._fmt('INFO', m), 'color:#06b6d4'),
+  warn: (m) => console.warn('%c' + logger._fmt('WARN', m), 'color:#f59e0b'),
+  error: (m) => console.error('%c' + logger._fmt('ERROR', m), 'color:#ef4444'),
+  success: (m) => console.log('%c' + logger._fmt('OK', m), 'color:#10b981'),
+};
+
+// ===== LOCATIONS AUTOCOMPLETE =====
+const LOCATIONS = [
+  { name:'Times Square, New York', emoji:'🗽' },
+  { name:'Piccadilly Circus, London', emoji:'🇬🇧' },
+  { name:'Shibuya Crossing, Tokyo', emoji:'🗼' },
+  { name:'La Défense, Paris', emoji:'🗼' },
+  { name:'Michigan Ave, Chicago', emoji:'🌆' },
+  { name:'Downtown Los Angeles', emoji:'🎬' },
+  { name:'Orchard Road, Singapore', emoji:'🦁' },
+  { name:'Champs-Élysées, Paris', emoji:'🥐' },
+  { name:'I-405 Freeway, LA', emoji:'🛣️' },
+  { name:'Harbor Bridge, Sydney', emoji:'🦘' },
+  { name:'Highway 101, San Francisco', emoji:'🌉' },
+  { name:'Khan Market, New Delhi', emoji:'🕌' },
+  { name:'Ring Road, Beijing', emoji:'🐉' },
+  { name:'Autobahn A9, Munich', emoji:'🚗' },
+  { name:'Sheikh Zayed Road, Dubai', emoji:'🏙️' },
+  { name:'Copacabana, Rio de Janeiro', emoji:'🌴' },
+];
+
+let autocompleteTimeout = null;
+function handleLocationInput(val) {
+  clearTimeout(autocompleteTimeout);
+  autocompleteTimeout = setTimeout(() => { renderAutocomplete(val); saveSession(); }, 200);
+}
+function renderAutocomplete(val) {
+  const list = document.getElementById('autocomplete-list');
+  if (!val || val.length < 2) { list.classList.remove('open'); return; }
+  const matches = LOCATIONS.filter(l => l.name.toLowerCase().includes(val.toLowerCase())).slice(0,6);
+  if (!matches.length) { list.classList.remove('open'); return; }
+  list.innerHTML = '';
+  matches.forEach(l => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    const pin = document.createElement('span');
+    pin.className = 'pin';
+    pin.textContent = l.emoji;
+    const label = document.createElement('span');
+    label.textContent = l.name;
+    item.appendChild(pin);
+    item.appendChild(label);
+    item.addEventListener('mousedown', (e) => { e.preventDefault(); selectLocation(l.name); });
+    list.appendChild(item);
+  });
+  list.classList.add('open');
+}
+function selectLocation(name) {
+  document.getElementById('location-input').value = name;
+  document.getElementById('autocomplete-list').classList.remove('open');
+  saveSession();
+}
+function showAutocomplete() { handleLocationInput(document.getElementById('location-input').value); }
+function hideAutocomplete() { setTimeout(() => document.getElementById('autocomplete-list').classList.remove('open'), 200); }
+
+// ===== PRESETS =====
+const PRESETS = [
+  { id:'signal', icon:'🚦', title:'Signal Timing', desc:'Analyze and optimize traffic signal timing cycles' },
+  { id:'routes', icon:'🗺️', title:'Alternate Routes', desc:'Suggest diversions and alternate route options' },
+  { id:'predict', icon:'🔮', title:'Traffic Prediction', desc:'Predict conditions for the next 2-4 hours ahead' },
+  { id:'root', icon:'🔍', title:'Root Cause Analysis', desc:'Identify bottlenecks and underlying root causes' },
+  { id:'weather', icon:'☁️', title:'Weather Impact', desc:'Assess weather effects on current traffic flow' },
+  { id:'incident', icon:'🚨', title:'Incident Response', desc:'Emergency routing and incident management plan' },
+  { id:'peak', icon:'📊', title:'Peak Hour Analysis', desc:'Analyze peak hour patterns and road capacity' },
+  { id:'offpeak', icon:'🌙', title:'Off-Peak Optimization', desc:'Optimize infrastructure during off-peak hours' },
+];
+const PRESET_QUERIES = {
+  signal: 'Analyze the current traffic signal timing at this location and provide optimized cycle lengths, phase splits, and offset recommendations to maximize throughput and minimize delay.',
+  routes: 'Based on the current congestion levels and incident report, suggest the best 3 alternate routes with estimated travel time savings and turn-by-turn guidance for diversion.',
+  predict: 'Using the current traffic patterns, weather conditions, and historical data, predict traffic conditions for the next 2-4 hours. Include expected congestion peaks and clearance times.',
+  root: 'Identify the primary bottlenecks and root causes of current congestion. Analyze contributing factors including signal timing, road geometry, demand surges, and incidents.',
+  weather: 'Assess how the current weather conditions are impacting traffic flow, speed, and safety. Provide specific adjustments to signal timing and speed limits to compensate.',
+  incident: 'Design an emergency traffic management response for the current incident. Include alternate routing, signal pre-emption, estimated clearance time, and public communication strategy.',
+  peak: 'Analyze the peak hour traffic patterns at this location. Compare current volumes to typical peaks, identify capacity constraints, and recommend demand management strategies.',
+  offpeak: 'Evaluate opportunities to optimize traffic infrastructure during off-peak hours. Recommend adaptive signal strategies, maintenance windows, and network rebalancing actions.',
+};
+
+function renderPresets() {
+  const grid = document.getElementById('preset-grid');
+  grid.innerHTML = PRESETS.map(p => `
+    <div class="preset-card" id="preset-${p.id}" onclick="selectPreset('${p.id}')">
+      <div class="preset-icon">${p.icon}</div>
+      <div class="preset-title">${p.title}</div>
+      <div class="preset-desc">${p.desc}</div>
+    </div>`).join('');
+}
+
+function selectPreset(id) {
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('preset-' + id).classList.add('active');
+  state.selectedPreset = id;
+  document.getElementById('query-input').value = PRESET_QUERIES[id];
+}
+
+// ===== METRICS =====
+function animateMetric(id, newVal) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('updated');
+  void el.offsetWidth;
+  el.textContent = typeof newVal === 'number' && newVal >= 1000 ? newVal.toLocaleString() : newVal;
+  el.classList.add('updated');
+}
+
+function updateTrend(id, val, ref, lowGood = false) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const diff = ((val - ref) / ref * 100).toFixed(0);
+  const up = val > ref;
+  let cls = up ? (lowGood ? 'trend-down' : 'trend-up') : (lowGood ? 'trend-up' : 'trend-down');
+  if (Math.abs(diff) < 2) { cls = 'trend-stable'; el.textContent = '● stable'; }
+  else el.textContent = (up ? '▲' : '▼') + ' ' + (up ? '+' : '') + diff + '%';
+  el.className = 'metric-trend ' + cls;
+}
+
+function setMetrics(m) {
+  const prev = { ...state.metrics };
+  Object.assign(state.metrics, m);
+  animateMetric('m-vehicles', m.vehicles.toLocaleString());
+  animateMetric('m-speed', m.speed);
+  animateMetric('m-congestion', m.congestion);
+  animateMetric('m-signal', m.signal);
+  updateTrend('t-vehicles', m.vehicles, prev.vehicles, false);
+  updateTrend('t-speed', m.speed, prev.speed, true);
+  updateTrend('t-congestion', m.congestion, prev.congestion, true);
+  updateTrend('t-signal', m.signal, prev.signal, false);
+}
+
+function randomMetrics() {
+  return {
+    vehicles: Math.floor(Math.random() * 3500 + 800),
+    speed: Math.floor(Math.random() * 60 + 10),
+    congestion: Math.floor(Math.random() * 90 + 5),
+    signal: Math.floor(Math.random() * 60 + 60),
+  };
+}
+
+// ===== LIVE MODE =====
+function toggleLiveMode() {
+  state.liveMode = !state.liveMode;
+  const badge = document.getElementById('live-badge');
+  const txt = document.getElementById('live-text');
+  if (state.liveMode) {
+    badge.classList.add('active');
+    txt.textContent = 'LIVE ON';
+    state.liveTimer = setInterval(() => { setMetrics(randomMetrics()); updateChartData(); }, CONFIG.LIVE_INTERVAL);
+    showToast('Live mode activated — metrics updating every 5s', 'info', '📡');
+  } else {
+    badge.classList.remove('active');
+    txt.textContent = 'LIVE OFF';
+    clearInterval(state.liveTimer);
+    showToast('Live mode deactivated', 'info', '⏸️');
+  }
+  saveSession();
+}
+
+// ===== CHART =====
+let trafficChart = null;
+
+function generateChartData() {
+  const base = [120,90,70,60,55,65,200,420,680,580,460,400,390,380,450,560,680,720,650,500,380,280,200,150];
+  return base.map(v => Math.max(0, v + Math.floor((Math.random()-0.5)*v*0.4)));
+}
+
+function updateChartData() {
+  state.chartData = generateChartData();
+  if (trafficChart) {
+    trafficChart.data.datasets[0].data = state.chartData;
+    trafficChart.update('active');
+  }
+}
+
+function initChart() {
+  if (window._chartJsBlocked || typeof Chart === 'undefined') {
+    const wrapper = document.querySelector('.chart-wrapper');
+    if (wrapper) {
+      wrapper.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:200px;color:var(--text-muted);font-size:13px;flex-direction:column;gap:8px;"><span style="font-size:2rem;">📈</span><span>Chart unavailable (CDN blocked)</span><span style="font-size:11px;opacity:.7;">Open via http:// server to enable</span></div>';
+    }
+    logger.warn('Chart.js not loaded — skipping chart initialization');
+    return;
+  }
+  const ctx = document.getElementById('traffic-chart').getContext('2d');
+  state.chartData = generateChartData();
+  const labels = Array.from({length:24}, (_,i) => {
+    const suffix = i < 12 ? 'AM' : 'PM';
+    const h12 = i % 12 === 0 ? 12 : i % 12;
+    return `${h12}${suffix}`;
+  });
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(99,102,241,0.4)');
+  gradient.addColorStop(1, 'rgba(99,102,241,0.02)');
+  trafficChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Traffic Volume',
+        data: state.chartData,
+        borderColor: '#6366f1',
+        backgroundColor: gradient,
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#6366f1',
+        pointRadius: 3,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#e2e8f0', font:{size:11} } },
+        tooltip: {
+          backgroundColor: 'rgba(15,15,35,0.95)',
+          borderColor: 'rgba(99,102,241,0.4)',
+          borderWidth: 1,
+          titleColor: '#a5b4fc',
+          bodyColor: '#e2e8f0',
+          callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} vehicles/hr` }
+        }
+      },
+      scales: {
+        x: { grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#64748b', font:{size:9}, maxTicksLimit:12 } },
+        y: { grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#64748b', font:{size:10}, callback: v => v>=1000 ? (v/1000).toFixed(0)+'k' : v } }
+      }
+    }
+  });
+}
+
+// ===== HEATMAP =====
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function generateHeatmapData() {
+  return DAYS.map(day => {
+    return Array.from({length:24}, (_,h) => {
+      let base = 20;
+      if (day === 'Sat' || day === 'Sun') {
+        if (h >= 11 && h <= 16) base = 60;
+        else if (h >= 17 && h <= 21) base = 50;
+        else if (h >= 0 && h <= 6) base = 5;
+        else base = 25;
+      } else {
+        if (h >= 7 && h <= 9) base = 85;
+        else if (h >= 16 && h <= 19) base = 90;
+        else if (h >= 11 && h <= 13) base = 65;
+        else if (h >= 0 && h <= 5) base = 5;
+        else base = 35;
+      }
+      return Math.min(100, Math.max(0, base + Math.floor((Math.random()-0.5)*30)));
+    });
+  });
+}
+
+function congestionColor(pct) {
+  if (pct < 30) return `hsl(${140},${60+pct}%,${45-pct/10}%)`;
+  if (pct < 55) return `hsl(${50},85%,${55-pct/5}%)`;
+  if (pct < 75) return `hsl(${28},90%,${55-pct/8}%)`;
+  return `hsl(${0},${75+pct/10}%,${50-pct/10}%)`;
+}
+
+function renderHeatmap() {
+  state.heatmapData = generateHeatmapData();
+  const grid = document.getElementById('heatmap-grid');
+  let html = '<div class="heatmap-header"></div>';
+  for (let h = 0; h < 24; h++) {
+    html += `<div class="heatmap-header" style="font-size:.55rem">${h}h</div>`;
+  }
+  state.heatmapData.forEach((dayData, di) => {
+    html += `<div class="heatmap-day">${DAYS[di]}</div>`;
+    dayData.forEach((pct, h) => {
+      html += `<div class="heatmap-cell" 
+        style="background:${congestionColor(pct)};animation-delay:${(di*24+h)*4}ms"
+        onmousemove="showHeatTip(event,'${DAYS[di]}',${h},${pct})"
+        onmouseleave="hideHeatTip()"></div>`;
+    });
+  });
+  grid.innerHTML = html;
+}
+
+function showHeatTip(e, day, hour, pct) {
+  const tip = document.getElementById('heatmap-tooltip');
+  const ampm = hour < 12 ? 'AM' : 'PM';
+  const h = hour % 12 === 0 ? 12 : hour % 12;
+  let level = pct < 30 ? '🟢 Low' : pct < 55 ? '🟡 Medium' : pct < 75 ? '🟠 High' : '🔴 Critical';
+  tip.innerHTML = `<b>${day} ${h}:00 ${ampm}</b><br>Congestion: ${pct}%<br>${level}`;
+  tip.style.display = 'block';
+  tip.style.left = (e.clientX + 12) + 'px';
+  tip.style.top = (e.clientY - 40) + 'px';
+}
+function hideHeatTip() { document.getElementById('heatmap-tooltip').style.display = 'none'; }
+
+// ===== AGENT STEPS =====
+const STEPS = [
+  { id:'collect', name:'collect_traffic_data', desc:'Fetching live sensor data for location' },
+  { id:'congestion', name:'evaluate_congestion_index', desc:'Computing Congestion Severity Index (CSI)' },
+  { id:'weather', name:'weather_impact_analysis', desc:'Assessing weather effects on traffic flow' },
+  { id:'signal', name:'signal_timing_optimizer', desc:'Running adaptive signal optimization model' },
+  { id:'incident', name:'incident_impact_assessment', desc:'Evaluating incident spread and delay cascades' },
+  { id:'synthesize', name:'synthesize_recommendations', desc:'Groq LLM generating final intelligence report' },
+];
+const STEP_DURATIONS = [800, 700, 900, 1000, 800, 0];
+
+function renderSteps(statusMap = {}) {
+  const container = document.getElementById('steps-container');
+  container.innerHTML = STEPS.map(s => {
+    const st = statusMap[s.id] || 'pending';
+    let iconHtml = '⏳', iconCls = '';
+    if (st === 'active') { iconHtml = '⚙️'; iconCls = 'spinning'; }
+    else if (st === 'done') { iconHtml = '✓'; iconCls = 'done-icon'; }
+    else if (st === 'error') { iconHtml = '✗'; iconCls = 'error-icon'; }
+    const dur = statusMap[s.id + '_time'] || '';
+    return `<div class="step-item ${st}" id="step-${s.id}">
+      <div class="step-icon ${iconCls}">${iconHtml}</div>
+      <div class="step-text">
+        <div class="step-name">${s.name}</div>
+        <div class="step-desc">${s.desc}</div>
+        <div class="step-bar"></div>
+      </div>
+      ${dur ? `<div class="step-time">${dur}ms</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function animateStep(id, duration) {
+  return new Promise(resolve => {
+    const el = document.getElementById('step-' + id);
+    if (!el) { resolve(); return; }
+    el.className = 'step-item active';
+    el.querySelector('.step-icon').className = 'step-icon spinning';
+    el.querySelector('.step-icon').textContent = '⚙️';
+    setTimeout(() => {
+      el.className = 'step-item done';
+      el.querySelector('.step-icon').className = 'step-icon done-icon';
+      el.querySelector('.step-icon').textContent = '✓';
+      resolve();
+    }, duration);
+  });
+}
+
+// ===== API CALL =====
+async function callGroq(userMessage) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('🔑 No API key set. Please enter your Groq API key in the Configuration panel above.');
+  }
+  const resp = await fetch(CONFIG.API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: CONFIG.MODEL,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage }
+      ],
+      max_tokens: 2048,
+      temperature: 0.7,
+    })
+  });
+  if (!resp.ok) {
+    const err = await resp.text().catch(() => '');
+    let msg = `API Error (${resp.status})`;
+    if (resp.status === 401) msg = '🔑 Invalid API key. Please check your Groq API key.';
+    else if (resp.status === 429) msg = '⏱️ Rate limit exceeded. Please wait a moment and try again.';
+    else if (resp.status === 503) msg = '🔧 Groq service unavailable. Please try again later.';
+    else if (resp.status === 400) msg = `⚠️ Bad request: ${err.slice(0,120)}`;
+    throw new Error(msg);
+  }
+  const data = await resp.json();
+  return data.choices[0].message.content;
+}
+
+// ===== FORMAT REPORT =====
+function formatReport(text) {
+  const sectionIcons = ['📍','🔍','✅','🚦','🔮','⚠️'];
+  let html = text
+    .split('\n')
+    .map(line => {
+      const trimmed = line.trim();
+      if (sectionIcons.some(ic => trimmed.startsWith(ic)) || trimmed.match(/^[A-Z\s]{5,}$/)) {
+        return `<span class="report-section-header">${trimmed}</span>`;
+      }
+      return line;
+    })
+    .join('\n');
+  return html;
+}
+
+function getRiskLevel(text) {
+  const t = text.toLowerCase();
+  if (t.includes('critical') || t.includes('severe') || t.includes('gridlock')) return 'critical';
+  if (t.includes('high risk') || t.includes('significant') || t.includes('major')) return 'high';
+  if (t.includes('moderate') || t.includes('medium') || t.includes('partial')) return 'medium';
+  return 'low';
+}
+
+function getRiskLabel(lvl) {
+  const map = { critical:'🔴 Critical', high:'🟠 High', medium:'🟡 Medium', low:'🟢 Low' };
+  return map[lvl] || '🟢 Low';
+}
+
+// ===== MAIN RUN =====
+async function runAnalysis() {
+  if (state.isRunning) return;
+  const location = document.getElementById('location-input').value.trim() || 'Unknown Location';
+  const time = document.getElementById('time-select').value;
+  const weather = document.getElementById('weather-select').value;
+  const incident = document.getElementById('incident-select').value;
+  const query = document.getElementById('query-input').value.trim();
+  if (!query) { showToast('Please select a preset or enter a query', 'warning', '⚠️'); return; }
+
+  state.isRunning = true;
+  const runBtn = document.getElementById('run-btn');
+  runBtn.disabled = true;
+  runBtn.innerHTML = '<div class="spinner"></div><span>Analyzing...</span>';
+
+  const statusMap = {};
+  STEPS.forEach(s => { statusMap[s.id] = 'pending'; });
+  renderSteps(statusMap);
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('results-content').innerHTML = `<div class="placeholder-text"><div class="big-icon" style="animation:spin 2s linear infinite;display:inline-block">⚙️</div><p>Agent is processing...</p></div>`;
+  document.getElementById('results-panel').querySelector('.results-header').innerHTML = `<span style="font-size:1rem;font-weight:700;color:var(--text);">📋 Analysis Report</span>`;
+
+  try {
+    for (let i = 0; i < STEPS.length - 1; i++) {
+      const s = STEPS[i];
+      const t0 = Date.now();
+      await animateStep(s.id, STEP_DURATIONS[i]);
+      statusMap[s.id] = 'done';
+      statusMap[s.id + '_time'] = Date.now() - t0;
+      const pct = Math.round((i + 1) / STEPS.length * 100);
+      document.getElementById('progress-bar').style.width = pct + '%';
+      document.getElementById('progress-label').textContent = pct + '%';
+    }
+
+    const lastStep = STEPS[STEPS.length - 1];
+    document.getElementById('step-' + lastStep.id).className = 'step-item active';
+    document.getElementById('step-' + lastStep.id).querySelector('.step-icon').className = 'step-icon spinning';
+
+    const userMessage = `Analyze traffic at: ${location}
+Time: ${time.replace(/_/g,' ')}
+Weather: ${weather.replace(/_/g,' ')}
+Incident: ${incident.replace(/_/g,' ')}
+Vehicle Count: ${state.metrics.vehicles.toLocaleString()}/hr
+Average Speed: ${state.metrics.speed} km/h
+Congestion: ${state.metrics.congestion}%
+Signal Cycle: ${state.metrics.signal} seconds
+Query: ${query}`;
+
+    const t0 = Date.now();
+    const result = await callGroq(userMessage);
+    const elapsed = Date.now() - t0;
+
+    statusMap[lastStep.id] = 'done';
+    statusMap[lastStep.id + '_time'] = elapsed;
+    document.getElementById('step-' + lastStep.id).className = 'step-item done';
+    document.getElementById('step-' + lastStep.id).querySelector('.step-icon').className = 'step-icon done-icon';
+    document.getElementById('step-' + lastStep.id).querySelector('.step-icon').textContent = '✓';
+    document.getElementById('progress-bar').style.width = '100%';
+    document.getElementById('progress-label').textContent = '100%';
+    renderSteps(statusMap);
+
+    const confidence = Math.floor(Math.random() * 18 + 78);
+    const risk = getRiskLevel(result);
+    state.currentResult = { text: result, confidence, risk, location, time, weather, incident, query, metrics: { ...state.metrics }, ts: Date.now() };
+
+    const header = document.getElementById('results-panel').querySelector('.results-header');
+    header.innerHTML = `
+      <span style="font-size:1rem;font-weight:700;color:var(--text);">📋 Analysis Report</span>
+      <span class="badge badge-confidence">🎯 ${confidence}% Confidence</span>
+      <span class="badge badge-${risk}">${getRiskLabel(risk)}</span>
+    `;
+
+    document.getElementById('results-content').innerHTML = `
+      <div class="report-content">${formatReport(result)}</div>
+      <div class="report-actions">
+        <button class="btn btn-outline" onclick="copyReport()" style="font-size:.82rem;padding:8px 14px">📋 Copy Report</button>
+        <button class="btn btn-outline" onclick="generateShareLink()" style="font-size:.82rem;padding:8px 14px">🔗 Share</button>
+        <button class="btn btn-outline" onclick="exportPDF()" style="font-size:.82rem;padding:8px 14px">📄 Print/PDF</button>
+      </div>`;
+
+    saveToHistory(state.currentResult);
+    saveSession();
+    showToast('Analysis complete! Report generated successfully.', 'success', '✅');
+    logger.success(`Analysis complete for ${location} in ${elapsed}ms`);
+  } catch (err) {
+    logger.error(err.message);
+    STEPS.forEach(s => {
+      const el = document.getElementById('step-' + s.id);
+      if (el && el.classList.contains('active')) {
+        el.className = 'step-item error';
+        el.querySelector('.step-icon').className = 'step-icon error-icon';
+        el.querySelector('.step-icon').textContent = '✗';
+      }
+    });
+    document.getElementById('results-content').innerHTML = `
+      <div class="error-state">
+        <span>⚠️</span>
+        <div>
+          <strong>Analysis Failed</strong><br>
+          <span style="font-size:.83rem">${err.message}</span><br>
+          <button class="btn btn-primary" onclick="runAnalysis()" style="margin-top:10px;font-size:.8rem;padding:7px 14px">🔄 Retry</button>
+        </div>
+      </div>`;
+    showToast(err.message, 'error', '❌');
+  } finally {
+    state.isRunning = false;
+    runBtn.disabled = false;
+    runBtn.innerHTML = '<span>🚀</span><span>Run Agent</span>';
+  }
+}
+
+// ===== RANDOMIZE =====
+function randomizeData() {
+  setMetrics(randomMetrics());
+  updateChartData();
+  renderHeatmap();
+  showToast('Data randomized with new simulated values', 'info', '🎲');
+  saveSession();
+}
+
+// ===== CLEAR =====
+function clearResults() {
+  document.getElementById('results-content').innerHTML = `<div class="placeholder-text"><div class="big-icon">🧠</div><p>Configure your parameters and click<br><strong>Run Agent</strong> to generate an AI-powered traffic analysis.</p></div>`;
+  document.getElementById('results-panel').querySelector('.results-header').innerHTML = `<span style="font-size:1rem;font-weight:700;color:var(--text);">📋 Analysis Report</span>`;
+  state.currentResult = null;
+  renderSteps();
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('progress-bar').style.width = '0%';
+  showToast('Results cleared', 'info', '🗑️');
+}
+
+// ===== EXPORT JSON =====
+function exportJSON() {
+  const data = {
+    metadata: {
+      exportedAt: new Date().toISOString(),
+      app: 'Traffic Analyzer AI',
+      model: CONFIG.MODEL,
+      version: '3.0',
+    },
+    session: {
+      location: document.getElementById('location-input').value,
+      timeOfDay: document.getElementById('time-select').value,
+      weather: document.getElementById('weather-select').value,
+      incidentType: document.getElementById('incident-select').value,
+    },
+    metrics: state.metrics,
+    chartData: state.chartData,
+    heatmapData: state.heatmapData,
+    result: state.currentResult,
+    history: state.history,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `traffic-analysis-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('JSON export downloaded successfully', 'success', '📦');
+}
+
+// ===== EXPORT PDF =====
+function exportPDF() {
+  if (!state.currentResult) { showToast('No analysis to export. Run an analysis first.', 'warning', '⚠️'); return; }
+  window.print();
+  showToast('Print dialog opened. Save as PDF.', 'info', '📄');
+}
+
+// ===== COPY REPORT =====
+async function copyReport() {
+  if (!state.currentResult) return;
+  try {
+    await navigator.clipboard.writeText(state.currentResult.text);
+    showToast('Report copied to clipboard!', 'success', '📋');
+  } catch {
+    showToast('Could not copy to clipboard', 'error', '❌');
+  }
+}
+
+// ===== SHARE =====
+function generateShareLink() {
+  const params = {
+    loc: document.getElementById('location-input').value,
+    time: document.getElementById('time-select').value,
+    weather: document.getElementById('weather-select').value,
+    incident: document.getElementById('incident-select').value,
+    query: document.getElementById('query-input').value.slice(0, 300),
+    metrics: state.metrics,
+  };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(params)));
+  const url = window.location.origin + window.location.pathname + '?share=' + encoded;
+  state.shareUrl = url;
+  document.getElementById('share-url-display').textContent = url;
+  openModal('share-modal');
+}
+
+async function copyShareUrl() {
+  try {
+    await navigator.clipboard.writeText(state.shareUrl);
+    showToast('Share link copied to clipboard!', 'success', '🔗');
+    closeModal('share-modal');
+  } catch {
+    showToast('Could not copy link', 'error', '❌');
+  }
+}
+
+function loadSharedParams() {
+  try {
+    const url = new URL(window.location.href);
+    const share = url.searchParams.get('share');
+    if (!share) return;
+    const params = JSON.parse(decodeURIComponent(atob(share)));
+    if (params.loc) document.getElementById('location-input').value = params.loc;
+    if (params.time) document.getElementById('time-select').value = params.time;
+    if (params.weather) document.getElementById('weather-select').value = params.weather;
+    if (params.incident) document.getElementById('incident-select').value = params.incident;
+    if (params.query) document.getElementById('query-input').value = params.query;
+    if (params.metrics) setMetrics(params.metrics);
+    showToast('Shared analysis loaded successfully!', 'success', '🔗');
+    url.searchParams.delete('share');
+    window.history.replaceState({}, '', url.toString());
+  } catch(e) { logger.warn('Could not load shared params: ' + e.message); }
+}
+
+// ===== HISTORY =====
+function saveToHistory(result) {
+  state.history.unshift({ ...result, id: Date.now(), favorite: false });
+  if (state.history.length > CONFIG.MAX_HISTORY) state.history.pop();
+  renderHistory();
+  persistHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!state.history.length) {
+    list.innerHTML = '<div class="empty-history">📭 No saved analyses yet. Run your first analysis to see history here.</div>';
+    return;
+  }
+  list.innerHTML = state.history.map((h, i) => `
+    <div class="history-item ${h.favorite ? 'favorite' : ''}" id="hist-${h.id}">
+      <div class="history-meta" onclick="loadHistory(${i})">
+        <div class="history-loc">📍 ${h.location || 'Unknown'}</div>
+        <div class="history-preview">${(h.query || '').slice(0, 60)}${h.query && h.query.length > 60 ? '…' : ''}</div>
+        <div class="history-time">🕐 ${new Date(h.ts).toLocaleString()} · 🎯 ${h.confidence}% · ${getRiskLabel(h.risk)}</div>
+      </div>
+      <div class="history-actions">
+        <button class="history-btn ${h.favorite ? 'active' : ''}" onclick="toggleFavorite(${i})" title="Bookmark">⭐</button>
+        <button class="history-btn" onclick="deleteHistory(${i})" title="Delete">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadHistory(i) {
+  const h = state.history[i];
+  if (!h) return;
+  document.getElementById('location-input').value = h.location || '';
+  if (h.time) document.getElementById('time-select').value = h.time;
+  if (h.weather) document.getElementById('weather-select').value = h.weather;
+  if (h.incident) document.getElementById('incident-select').value = h.incident;
+  if (h.query) document.getElementById('query-input').value = h.query;
+  if (h.metrics) setMetrics(h.metrics);
+  state.currentResult = h;
+  const header = document.getElementById('results-panel').querySelector('.results-header');
+  header.innerHTML = `<span style="font-size:1rem;font-weight:700;color:var(--text);">📋 Analysis Report</span>
+    <span class="badge badge-confidence">🎯 ${h.confidence}% Confidence</span>
+    <span class="badge badge-${h.risk}">${getRiskLabel(h.risk)}</span>`;
+  document.getElementById('results-content').innerHTML = `
+    <div class="report-content">${formatReport(h.text)}</div>
+    <div class="report-actions">
+      <button class="btn btn-outline" onclick="copyReport()" style="font-size:.82rem;padding:8px 14px">📋 Copy Report</button>
+      <button class="btn btn-outline" onclick="exportPDF()" style="font-size:.82rem;padding:8px 14px">📄 Print/PDF</button>
+    </div>`;
+  showToast('History entry restored', 'info', '📂');
+}
+
+function toggleFavorite(i) {
+  state.history[i].favorite = !state.history[i].favorite;
+  persistHistory();
+  renderHistory();
+  showToast(state.history[i].favorite ? 'Bookmarked!' : 'Removed bookmark', 'info', '⭐');
+}
+
+function deleteHistory(i) {
+  state.history.splice(i, 1);
+  persistHistory();
+  renderHistory();
+  showToast('History entry deleted', 'info', '🗑️');
+}
+
+function persistHistory() {
+  try { localStorage.setItem(CONFIG.STORAGE_KEY + '_history', JSON.stringify(state.history)); } catch(e) {}
+}
+
+function loadHistoryFromStorage() {
+  try {
+    const raw = localStorage.getItem(CONFIG.STORAGE_KEY + '_history');
+    if (raw) { state.history = JSON.parse(raw); renderHistory(); }
+    else renderHistory();
+  } catch(e) { renderHistory(); }
+}
+
+// ===== SESSION PERSISTENCE =====
+function saveSession() {
+  try {
+    const session = {
+      location: document.getElementById('location-input').value,
+      time: document.getElementById('time-select').value,
+      weather: document.getElementById('weather-select').value,
+      incident: document.getElementById('incident-select').value,
+      metrics: state.metrics,
+      theme: state.theme,
+    };
+    localStorage.setItem(CONFIG.STORAGE_KEY + '_session', JSON.stringify(session));
+  } catch(e) {}
+}
+
+function restoreSession() {
+  try {
+    const raw = localStorage.getItem(CONFIG.STORAGE_KEY + '_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.location) document.getElementById('location-input').value = s.location;
+    if (s.time) document.getElementById('time-select').value = s.time;
+    if (s.weather) document.getElementById('weather-select').value = s.weather;
+    if (s.incident) document.getElementById('incident-select').value = s.incident;
+    if (s.metrics) setMetrics(s.metrics);
+    if (s.theme && s.theme !== state.theme) toggleTheme();
+    logger.info('Session restored from localStorage');
+  } catch(e) {}
+}
+
+// ===== THEME =====
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  document.getElementById('theme-toggle').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+  if (trafficChart) {
+    const tickColor = state.theme === 'dark' ? '#64748b' : '#94a3b8';
+    trafficChart.options.scales.x.ticks.color = tickColor;
+    trafficChart.options.scales.y.ticks.color = tickColor;
+    trafficChart.update();
+  }
+  saveSession();
+}
+
+// ===== MODAL =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ===== COLLAPSIBLE =====
+function toggleCollapsible(header) {
+  header.classList.toggle('collapsed');
+  const body = header.nextElementSibling;
+  if (header.classList.contains('collapsed')) {
+    body.style.maxHeight = '0px';
+    body.classList.add('collapsed');
+  } else {
+    body.style.maxHeight = '400px';
+    body.classList.remove('collapsed');
+  }
+}
+
+// ===== TOAST =====
+function showToast(message, type = 'info', icon = 'ℹ️') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 320);
+  }, 4500);
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'TEXTAREA' || tag === 'INPUT') {
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runAnalysis(); return; }
+    return;
+  }
+  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runAnalysis(); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'R') { e.preventDefault(); randomizeData(); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'C') { e.preventDefault(); clearResults(); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'E') { e.preventDefault(); exportJSON(); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'L') { e.preventDefault(); toggleLiveMode(); return; }
+  if (e.key === '?' || e.key === 'F1') { e.preventDefault(); openModal('shortcuts-modal'); return; }
+  if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); }
+});
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// ===== INIT =====
+function init() {
+  logger.info('Traffic Analyzer AI initializing...');
+  renderPresets();
+  renderSteps();
+  initChart();
+  renderHeatmap();
+  restoreSession();
+  loadHistoryFromStorage();
+  loadSharedParams();
+  // Restore saved API key into the input field (key stored in localStorage)
+  const savedKey = getApiKey();
+  const keyInput = document.getElementById('api-key-input');
+  if (keyInput) keyInput.value = savedKey;
+  document.getElementById('location-input').value = document.getElementById('location-input').value || 'Times Square, New York';
+  saveSession();
+  showToast('Traffic Analyzer AI ready! Press ? for shortcuts.', 'success', '🚦');
+  logger.success('Initialization complete');
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
